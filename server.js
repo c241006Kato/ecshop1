@@ -22,6 +22,22 @@ app.get("/api/search", async (req, res) => {
   }
 });
 
+// 商品ランキングAPIの中継
+app.get("/api/ranking", async (req, res) => {
+  // ランキングを取得するカテゴリIDをクエリパラメータから取得
+  const categoryId = req.query.category_id || "1"; // カテゴリIDが指定されていない場合は総合（ID:1）を使用
+  const url = `https://shopping.yahooapis.jp/ShoppingWebService/V1/highRatingTrendRanking=${APP_ID}&category_id=${categoryId}`;
+
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "APIリクエストに失敗しました" });
+  }
+});
+
 // サーバー起動
 app.listen(3000, () => {
   console.log("✅ Server running at http://localhost:3000");
