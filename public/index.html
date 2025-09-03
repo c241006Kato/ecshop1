@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Yahooショッピング検索</title>
+  <script src="https://unpkg.com/vue@3"></script>
+</head>
+<body>
+  <div id="app">
+    <h1>Yahooショッピング検索</h1>
+    <input v-model="keyword" placeholder="検索キーワード">
+    <button @click="search">検索</button>
+
+    <p v-if="loading">検索中...</p>
+    <p v-if="error" style="color:red">{{ error }}</p>
+
+    <ul>
+      <li v-for="item in items" :key="item.code">
+        <a :href="item.url" target="_blank">{{ item.name }}</a>
+        - {{ item.price }}円
+      </li>
+    </ul>
+  </div>
+
+  <script>
+    const { createApp } = Vue;
+
+    createApp({
+      data() {
+        return {
+          keyword: "ラーメン",
+          items: [],
+          loading: false,
+          error: null,
+        };
+      },
+      methods: {
+        async search() {
+          this.loading = true;
+          this.error = null;
+          this.items = [];
+
+          try {
+            const res = await fetch(`/api/search?q=${encodeURIComponent(this.keyword)}`);
+            const data = await res.json();
+            if (data.hits) {
+              this.items = data.hits.map(hit => ({
+                code: hit.code,
+                name: hit.name,
+                url: hit.url,
+                price: hit.price
+              }));
+            } else {
+              this.error = "検索結果が見つかりませんでした。";
+            }
+          } catch (e) {
+            this.error = "検索エラー: " + e.message;
+          } finally {
+            this.loading = false;
+          }
+        }
+      },
+      mounted() {
+        this.search();
+      }
+    }).mount("#app");
+  </script>
+</body>
+</html>
