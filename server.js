@@ -57,6 +57,30 @@ app.get("/api/ranking", async (req, res) => {
   }
 });
 
+// Yahoo!ロコAPIの中継
+app.get("/api/local-search", async (req, res) => {
+  // クライアントから送られてくる緯度、経度、検索クエリを取得
+  const { lat, lon, query = "ラーメン" } = req.query; 
+
+  // 緯度と経度がなければエラーを返す
+  if (!lat || !lon) {
+    return res.status(400).json({ error: "緯度と経度を指定してください。" });
+  }
+
+  const url = `https://map.yahooapis.jp/search/local/V1/localSearch?appid=${APP_ID}&query=${encodeURIComponent(query)}&lat=${lat}&lon=${lon}&dist=3000&gc=0102008`; // gc=0102008 はラーメン店の業種コード
+
+  try {
+    const response = await fetch(url);
+    const text = await response.text();
+    // Yahoo!ロコAPIはXMLを返すため、そのままクライアントに返却
+    res.set('Content-Type', 'text/xml');
+    res.send(text);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "APIリクエストに失敗しました" });
+  }
+});
+
 app.listen(3000, () => {
   console.log("✅ Server running at http://localhost:3000");
 });
