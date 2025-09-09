@@ -1,13 +1,20 @@
 import express from "express"; 
 import fetch from "node-fetch";
+import path from "path";
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 
-const APP_ID = "dj00aiZpPU5qSWpOTW9wM09zSyZzPWNvbnN1bWVyc2VjcmV0Jng9M2Y-"; // ←ここにYahooのアプリケーションIDを入れる
+// あなたのYahoo!アプリケーションIDを設定してください
+const APP_ID = "dj00aiZpPU5qSWpOTW9wM09zSyZzPWNvbnN1bWVyc2VjcmV0Jng9M2Y-"; 
 
-// public フォルダを静的ファイルとして公開
-app.use(express.static("public"));
+// publicディレクトリを静的ファイルとして提供
+app.use(express.static(path.join(__dirname, "public")));
 
-// APIの中継
+// 商品検索APIの中継
 app.get("/api/search", async (req, res) => {
   const query = req.query.q;
   const url = `https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch?appid=${APP_ID}&query=${encodeURIComponent(query)}`;
@@ -22,19 +29,18 @@ app.get("/api/search", async (req, res) => {
   }
 });
 
-// 商品ランキングAPIの中継
+// ⭐ ランキングAPIの中継を追加
 app.get("/api/ranking", async (req, res) => {
-  // ランキングを取得するカテゴリIDをクエリパラメータから取得
-  const categoryId = req.query.category_id || "1"; // カテゴリIDが指定されていない場合は総合（ID:1）を使用
-  const url = `https://shopping.yahooapis.jp/ShoppingWebService/V1/highRatingTrendRanking=${APP_ID}&category_id=${categoryId}`;
-
+  // Yahoo!ショッピングの週間総合ランキングAPI
+  const url = `https://shopping.yahooapis.jp/ShoppingWebService/V2/queryRanking?appid=${APP_ID}`;
+  
   try {
     const response = await fetch(url);
     const data = await response.json();
     res.json(data);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "APIリクエストに失敗しました" });
+    res.status(500).json({ error: "ランキングAPIのリクエストに失敗しました" });
   }
 });
 

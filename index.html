@@ -1,19 +1,111 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" class="h-full bg-gray-100">
 <head>
   <meta charset="UTF-8">
-  <title>おすすめ商品検索</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yahoo!ショッピングキーワード検索＆ランキサイト</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
 </head>
-<body>
-  <h1>Yahooおすすめ商品検索</h1>
-  <form id="searchForm">
-    <input type="text" id="keyword" placeholder="商品を検索">
-    <button type="submit">検索</button>
-  </form>
+<body class="min-h-full flex flex-col items-center p-6">
 
-  <div id="resultArea" class="result-grid"></div>
+  <div class="max-w-4xl w-full">
+    <div class="bg-white shadow-xl rounded-lg p-8">
+      <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">商品検索(ヤフー)</h1>
 
-  <script src="script.js"></script>
+      <form id="search-form" class="flex flex-col sm:flex-row gap-2">
+        <input type="text" id="search-input" placeholder="キーワードを入力" class="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+        <button type="submit" class="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-colors">検索</button>
+      </form>
+    </div>
+
+    <div id="results" class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+   
+    <div id="ranking-container" class="mt-12 bg-white shadow-xl rounded-lg p-8 hidden">
+      <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">Yahoo!ショッピング 週間総合ランキング</h2>
+      <div id="ranking-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const searchForm = document.getElementById("search-form");
+      const searchInput = document.getElementById("search-input");
+      const resultsDiv = document.getElementById("results");
+      const rankingContainer = document.getElementById("ranking-container");
+      const rankingList = document.getElementById("ranking-list");
+
+      // 検索フォームの送信イベントを処理
+      searchForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const query = searchInput.value;
+        if (!query) {
+            // キーワードがない場合はランキングを表示
+            resultsDiv.innerHTML = '';
+            rankingContainer.classList.remove('hidden');
+            return;
+        }
+
+        resultsDiv.innerHTML = '<p class="col-span-full text-center text-gray-500">検索中...</p>';
+        rankingContainer.classList.add('hidden'); // 検索中はランキングを非表示にする
+
+        try {
+          const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+          const data = await response.json();
+          displayItems(data.hits, resultsDiv);
+        } catch (error) {
+          console.error("検索エラー:", error);
+          resultsDiv.innerHTML = '<p class="col-span-full text-center text-red-500">検索に失敗しました。時間をおいて再度お試しください。</p>';
+        }
+      });
+
+      // 商品リストを表示する関数
+      function displayItems(items, container) {
+        container.innerHTML = "";
+        if (!items || items.length === 0) {
+          container.innerHTML = '<p class="col-span-full text-center text-gray-500">商品が見つかりませんでした。</p>';
+          return;
+        }
+
+        items.forEach(item => {
+          const itemElement = document.createElement("div");
+          itemElement.className = "bg-white p-4 rounded-lg shadow-md transition-transform transform hover:scale-105";
+          itemElement.innerHTML = `
+            <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="block">
+              <img src="${item.image.medium}" alt="${item.name}" class="w-full h-48 object-contain rounded-md mb-4">
+              <div class="text-sm font-semibold text-gray-700 mb-1 line-clamp-2">${item.name}</div>
+              <div class="text-lg font-bold text-red-600">¥${item.price}</div>
+            </a>
+          `;
+          container.appendChild(itemElement);
+        });
+      }
+
+      // ⭐ ランキング情報を取得して表示する関数を追加
+      async function fetchAndDisplayRanking() {
+          try {
+              const response = await fetch(`/api/ranking`);
+              const data = await response.json();
+              if (data && data.ranking) {
+                displayItems(data.ranking.items, rankingList);
+                rankingContainer.classList.remove('hidden'); // ランキングを表示
+              }
+          } catch (error) {
+              console.error("ランキングの取得エラー:", error);
+              rankingList.innerHTML = '<p class="col-span-full text-center text-red-500">ランキングの取得に失敗しました。</p>';
+              rankingContainer.classList.remove('hidden');
+          }
+      }
+
+      // ページの読み込み時にランキングを自動で表示
+      fetchAndDisplayRanking();
+    });
+  </script>
+
 </body>
 </html>
