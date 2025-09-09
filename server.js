@@ -1,5 +1,5 @@
-import express from "express"; 
-import fetch from "node-fetch"; 
+import express from "express";
+import fetch from "node-fetch";
 import path from "path";
 import { fileURLToPath } from 'url';
 
@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const APP_ID = "dj00aiZpPU5qSWpOTW9wM09zSyZzPWNvbnN1bWVyc2VjcmV0Jng9M2Y-"; // TODO: ここにあなたのアプリケーションIDを設定してください
+const APP_ID = "dj00aiZpPU5qSWpOTW9wM09zSyZzPWNvbnN1bWVyc2VjcmV0Jng9M2Y-"; 
 
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -26,17 +26,14 @@ app.get("/api/search", async (req, res) => {
   }
 });
 
-// ランキングAPIの中継とデータ加工 (デバッグログを追加)
+// ランキングAPIの中継とデータ加工
 app.get("/api/ranking", async (req, res) => {
   const url = `https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch?appid=${APP_ID}&query=1位`;
   
   try {
     const response = await fetch(url);
     const data = await response.json();
-
-    // デバッグ用: サーバーのコンソールにAPIの応答内容を出力
-    console.log("Yahoo! APIからの応答データ:", JSON.stringify(data, null, 2));
-
+    
     if (data && data.hits) {
       const formattedItems = data.hits.map(item => ({
         url: item.url,
@@ -48,7 +45,6 @@ app.get("/api/ranking", async (req, res) => {
       }));
       res.json({ hits: formattedItems });
     } else {
-      console.error("エラー: data.hits プロパティが見つかりません。");
       res.status(404).json({ error: "ランキングデータが見つかりませんでした" });
     }
   } catch (err) {
@@ -57,26 +53,23 @@ app.get("/api/ranking", async (req, res) => {
   }
 });
 
-// Yahoo!ロコAPIの中継
+// ローカル検索APIの中継
 app.get("/api/local-search", async (req, res) => {
-  // クライアントから送られてくる緯度、経度、検索クエリを取得
-  const { lat, lon, query = "ラーメン" } = req.query; 
+  const { lat, lon, q: query } = req.query; 
 
-  // 緯度と経度がなければエラーを返す
-  if (!lat || !lon) {
-    return res.status(400).json({ error: "緯度と経度を指定してください。" });
+  if (!lat || !lon || !query) {
+    return res.status(400).json({ error: "緯度、経度、およびクエリを指定してください。" });
   }
 
-  const url = `https://map.yahooapis.jp/search/local/V1/localSearch?appid=${APP_ID}&query=${encodeURIComponent(query)}&lat=${lat}&lon=${lon}&dist=3000&gc=0102008`; // gc=0102008 はラーメン店の業種コード
+  const url = `https://map.yahooapis.jp/search/local/V1/localSearch?appid=${APP_ID}&query=${encodeURIComponent(query)}&lat=${lat}&lon=${lon}&dist=3000`;
 
   try {
     const response = await fetch(url);
-    const text = await response.text();
-    // Yahoo!ロコAPIはXMLを返すため、そのままクライアントに返却
+    const xmlText = await response.text();
     res.set('Content-Type', 'text/xml');
-    res.send(text);
+    res.send(xmlText);
   } catch (err) {
-    console.error(err);
+    console.error("ローカル検索APIのリクエストに失敗しました:", err);
     res.status(500).json({ error: "APIリクエストに失敗しました" });
   }
 });
