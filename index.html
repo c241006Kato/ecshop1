@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Yahoo!ショッピング＆ローカル検索</title>
+  <title>Yahoo!検索</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
@@ -15,18 +15,27 @@
 <body class="min-h-full flex flex-col items-center p-6">
 
   <div class="max-w-4xl w-full">
-    <div class="bg-white shadow-xl rounded-lg p-8">
-      <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">商品・店舗 検索</h1>
-
-      <form id="search-form" class="flex flex-col sm:flex-row gap-2">
-        <input type="text" id="search-input" placeholder="キーワードを入力（例：ラーメン、カメラ）" class="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+    <div class="bg-white shadow-xl rounded-lg p-8 mb-8">
+      <h1 class="text-2xl font-bold text-gray-800 mb-6 text-center">商品検索 (Yahoo!ショッピング)</h1>
+      <form id="product-search-form" class="flex flex-col sm:flex-row gap-2">
+        <input type="text" id="product-search-input" placeholder="キーワードを入力（例：カメラ、パソコン）" class="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
         <button type="submit" class="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-colors">検索</button>
       </form>
     </div>
 
-    <div id="results" class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-   
-    <div id="ranking-container" class="mt-12 bg-white shadow-xl rounded-lg p-8 hidden">
+    <div id="product-results" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+
+    <div class="bg-white shadow-xl rounded-lg p-8 mt-12">
+        <h1 class="text-2xl font-bold text-gray-800 mb-6 text-center">店舗検索 (Yahoo!ロコ)</h1>
+        <form id="local-search-form" class="flex flex-col sm:flex-row gap-2">
+            <input type="text" id="local-search-input" placeholder="店舗名や業種を入力（例：ラーメン、カフェ）" class="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+            <button type="submit" class="px-6 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition-colors">現在地から探す</button>
+        </form>
+    </div>
+
+    <div id="local-results" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-8"></div>
+
+    <div id="ranking-container" class="mt-12 bg-white shadow-xl rounded-lg p-8">
       <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">Yahoo!ショッピング 週間総合ランキング</h2>
       <div id="ranking-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
     </div>
@@ -34,71 +43,80 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
-      const searchForm = document.getElementById("search-form");
-      const searchInput = document.getElementById("search-input");
-      const resultsDiv = document.getElementById("results");
+      const productSearchForm = document.getElementById("product-search-form");
+      const productSearchInput = document.getElementById("product-search-input");
+      const productResultsDiv = document.getElementById("product-results");
+      
+      const localSearchForm = document.getElementById("local-search-form");
+      const localSearchInput = document.getElementById("local-search-input");
+      const localResultsDiv = document.getElementById("local-results");
+
       const rankingContainer = document.getElementById("ranking-container");
       const rankingList = document.getElementById("ranking-list");
 
-      searchForm.addEventListener("submit", async (e) => {
+      // 商品検索のイベントリスナー
+      productSearchForm.addEventListener("submit", async (e) => {
         e.preventDefault();
-        const query = searchInput.value;
-        const localSearchKeywords = ["ラーメン", "レストラン", "カフェ", "病院", "薬局"];
-        const isLocalSearch = localSearchKeywords.some(keyword => query.includes(keyword));
+        const query = productSearchInput.value;
+        if (!query) return;
 
-        if (!query) {
-            resultsDiv.innerHTML = '';
-            rankingContainer.classList.remove('hidden');
-            return;
-        }
-
-        resultsDiv.innerHTML = '<p class="col-span-full text-center text-gray-500">検索中...</p>';
+        productResultsDiv.innerHTML = '<p class="col-span-full text-center text-gray-500">商品検索中...</p>';
+        localResultsDiv.innerHTML = '';
         rankingContainer.classList.add('hidden');
 
-        if (isLocalSearch) {
-            if ("geolocation" in navigator) {
-                navigator.geolocation.getCurrentPosition(async (position) => {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-                    
-                    try {
-                        const response = await fetch(`/api/local-search?lat=${lat}&lon=${lon}&q=${encodeURIComponent(query)}`);
-                        if (!response.ok) throw new Error('APIリクエストが失敗しました。');
-                        const xmlText = await response.text();
-                        const parser = new DOMParser();
-                        const xmlDoc = parser.parseFromString(xmlText, "text/xml");
-                        const features = xmlDoc.getElementsByTagName("Feature");
-                        displayLocalItems(features, resultsDiv);
-                    } catch (error) {
-                        console.error("店舗検索エラー:", error);
-                        resultsDiv.innerHTML = '<p class="col-span-full text-center text-red-500">店舗の検索に失敗しました。再度お試しください。</p>';
-                    }
-                }, (error) => {
-                    console.error("位置情報取得エラー:", error);
-                    resultsDiv.innerHTML = '<p class="col-span-full text-center text-red-500">位置情報の取得に失敗しました。ブラウザの設定をご確認ください。</p>';
-                });
-            } else {
-                resultsDiv.innerHTML = '<p class="col-span-full text-center text-red-500">このブラウザは位置情報に対応していません。</p>';
-            }
-        } else {
-            try {
-              const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-              const data = await response.json();
-              displayItems(data.hits, resultsDiv);
-            } catch (error) {
-              console.error("商品検索エラー:", error);
-              resultsDiv.innerHTML = '<p class="col-span-full text-center text-red-500">検索に失敗しました。時間をおいて再度お試しください。</p>';
-            }
+        try {
+          const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+          const data = await response.json();
+          displayItems(data.hits, productResultsDiv);
+        } catch (error) {
+          console.error("商品検索エラー:", error);
+          productResultsDiv.innerHTML = '<p class="col-span-full text-center text-red-500">商品検索に失敗しました。</p>';
         }
       });
 
+      // 店舗検索のイベントリスナー
+      localSearchForm.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const query = localSearchInput.value;
+          if (!query) return;
+
+          localResultsDiv.innerHTML = '<p class="col-span-full text-center text-gray-500">位置情報を取得して店舗を検索中...</p>';
+          productResultsDiv.innerHTML = '';
+          rankingContainer.classList.add('hidden');
+
+          if ("geolocation" in navigator) {
+              navigator.geolocation.getCurrentPosition(async (position) => {
+                  const lat = position.coords.latitude;
+                  const lon = position.coords.longitude;
+                  
+                  try {
+                      const response = await fetch(`/api/local-search?lat=${lat}&lon=${lon}&q=${encodeURIComponent(query)}`);
+                      if (!response.ok) throw new Error('APIリクエストが失敗しました。');
+                      const xmlText = await response.text();
+                      const parser = new DOMParser();
+                      const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+                      const features = xmlDoc.getElementsByTagName("Feature");
+                      displayLocalItems(features, localResultsDiv);
+                  } catch (error) {
+                      console.error("店舗検索エラー:", error);
+                      localResultsDiv.innerHTML = '<p class="col-span-full text-center text-red-500">店舗の検索に失敗しました。再度お試しください。</p>';
+                  }
+              }, (error) => {
+                  console.error("位置情報取得エラー:", error);
+                  localResultsDiv.innerHTML = '<p class="col-span-full text-center text-red-500">位置情報の取得に失敗しました。ブラウザの設定をご確認ください。</p>';
+              });
+          } else {
+              localResultsDiv.innerHTML = '<p class="col-span-full text-center text-red-500">このブラウザは位置情報に対応していません。</p>';
+          }
+      });
+
+      // 商品を表示する関数
       function displayItems(items, container) {
         container.innerHTML = "";
         if (!items || items.length === 0) {
           container.innerHTML = '<p class="col-span-full text-center text-gray-500">商品が見つかりませんでした。</p>';
           return;
         }
-
         items.forEach(item => {
           const itemElement = document.createElement("div");
           itemElement.className = "bg-white p-4 rounded-lg shadow-md transition-transform transform hover:scale-105";
@@ -113,6 +131,29 @@
         });
       }
 
+      // 店舗を表示する関数
+      function displayLocalItems(features, container) {
+        container.innerHTML = "";
+        if (features.length === 0) {
+            container.innerHTML = '<p class="col-span-full text-center text-gray-500">近くに店舗が見つかりませんでした。</p>';
+            return;
+        }
+        for (const feature of features) {
+            const name = feature.querySelector("Name")?.textContent || "店名不明";
+            const address = feature.querySelector("Address")?.textContent || "住所不明";
+            const uid = feature.querySelector("Uid")?.textContent;
+            const itemElement = document.createElement("div");
+            itemElement.className = "bg-white p-4 rounded-lg shadow-md transition-transform transform hover:scale-105";
+            itemElement.innerHTML = `
+                <div class="text-lg font-bold text-gray-800">${name}</div>
+                <div class="text-sm text-gray-600 mt-1">${address}</div>
+                ${uid ? `<a href="https://map.yahoo.co.jp/v1/place/${uid}" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline text-sm mt-2 block">Yahoo!地図で見る</a>` : ''}
+            `;
+            container.appendChild(itemElement);
+        }
+      }
+
+      // ランキングを表示する関数
       async function fetchAndDisplayRanking() {
           try {
               const response = await fetch(`/api/ranking`);
@@ -129,29 +170,6 @@
               rankingList.innerHTML = '<p class="col-span-full text-center text-red-500">ランキングの取得に失敗しました。</p>';
               rankingContainer.classList.remove('hidden');
           }
-      }
-
-      function displayLocalItems(features, container) {
-        container.innerHTML = "";
-        if (features.length === 0) {
-            container.innerHTML = '<p class="col-span-full text-center text-gray-500">近くに店舗が見つかりませんでした。</p>';
-            return;
-        }
-
-        for (const feature of features) {
-            const name = feature.querySelector("Name")?.textContent || "店名不明";
-            const address = feature.querySelector("Address")?.textContent || "住所不明";
-            const uid = feature.querySelector("Uid")?.textContent;
-
-            const itemElement = document.createElement("div");
-            itemElement.className = "bg-white p-4 rounded-lg shadow-md transition-transform transform hover:scale-105";
-            itemElement.innerHTML = `
-                <div class="text-lg font-bold text-gray-800">${name}</div>
-                <div class="text-sm text-gray-600 mt-1">${address}</div>
-                ${uid ? `<a href="https://map.yahoo.co.jp/v1/place/${uid}" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:underline text-sm mt-2 block">Yahoo!地図で見る</a>` : ''}
-            `;
-            container.appendChild(itemElement);
-        }
       }
       
       fetchAndDisplayRanking();
