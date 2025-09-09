@@ -1,5 +1,5 @@
 import express from "express"; 
-import fetch from "node-fetch";
+import fetch from "node-fetch"; 
 import path from "path";
 import { fileURLToPath } from 'url';
 
@@ -7,12 +7,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-
 const APP_ID = "dj00aiZpPU5qSWpOTW9wM09zSyZzPWNvbnN1bWVyc2VjcmV0Jng9M2Y-"; 
 
 app.use(express.static(path.join(__dirname, "public")));
 
-// 商品検索APIの中継
+// 商品検索APIの中継 (V3)
 app.get("/api/search", async (req, res) => {
   const query = req.query.q;
   const url = `https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch?appid=${APP_ID}&query=${encodeURIComponent(query)}`;
@@ -27,18 +26,18 @@ app.get("/api/search", async (req, res) => {
   }
 });
 
-// ランキングAPIの中継とデータ加工
+// ランキングAPIの中継とデータ加工 (V2からV3へ変更)
 app.get("/api/ranking", async (req, res) => {
-  // output=jsonを追加してJSON形式のレスポンスを要求
-  const url = `https://shopping.yahooapis.jp/ShoppingWebService/V3/queryitemSearch?appid=${APP_ID}&output=json`;
+  // ランキング機能はV3に統合されたため、V3の検索APIを使用
+  // 特定のキーワードでランキングに近い結果を取得
+  const url = `https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch?appid=${APP_ID}&query=人気商品`;
   
   try {
     const response = await fetch(url);
     const data = await response.json();
 
-    // ランキングAPIのデータを検索APIの形式に変換
-    if (data && data.ranking && data.ranking.items) {
-      const formattedItems = data.ranking.items.map(item => ({
+    if (data && data.hits) {
+      const formattedItems = data.hits.map(item => ({
         url: item.url,
         image: {
           medium: item.image.medium
