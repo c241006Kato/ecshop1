@@ -1,5 +1,5 @@
 import express from "express"; 
-import fetch from "node-fetch"; // Node.js v17以前の場合
+import fetch from "node-fetch";
 import path from "path";
 import { fileURLToPath } from 'url';
 
@@ -29,7 +29,8 @@ app.get("/api/search", async (req, res) => {
 
 // ランキングAPIの中継とデータ加工
 app.get("/api/ranking", async (req, res) => {
-  const url = `https://shopping.yahooapis.jp/ShoppingWebService/V2/queryRanking?appid=${APP_ID}`;
+  // output=jsonを追加してJSON形式のレスポンスを要求
+  const url = `https://shopping.yahooapis.jp/ShoppingWebService/V2/queryRanking?appid=${APP_ID}&output=json`;
   
   try {
     const response = await fetch(url);
@@ -45,7 +46,6 @@ app.get("/api/ranking", async (req, res) => {
         name: item.name,
         price: item.price
       }));
-      // 検索APIの形式に合わせて`hits`プロパティを持つオブジェクトとして返す
       res.json({ hits: formattedItems });
     } else {
       res.status(404).json({ error: "ランキングデータが見つかりませんでした" });
