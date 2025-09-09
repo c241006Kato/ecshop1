@@ -1,5 +1,5 @@
 import express from "express"; 
-import fetch from "node-fetch";
+import fetch from "node-fetch"; // Node.js v17以前の場合
 import path from "path";
 import { fileURLToPath } from 'url';
 
@@ -8,10 +8,8 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// あなたのYahoo!アプリケーションIDを設定してください
 const APP_ID = "dj00aiZpPU5qSWpOTW9wM09zSyZzPWNvbnN1bWVyc2VjcmV0Jng9M2Y-"; 
 
-// publicディレクトリを静的ファイルとして提供
 app.use(express.static(path.join(__dirname, "public")));
 
 // 商品検索APIの中継
@@ -29,22 +27,35 @@ app.get("/api/search", async (req, res) => {
   }
 });
 
-// ⭐ ランキングAPIの中継を追加
+// ランキングAPIの中継とデータ加工
 app.get("/api/ranking", async (req, res) => {
-  // Yahoo!ショッピングの週間総合ランキングAPI
   const url = `https://shopping.yahooapis.jp/ShoppingWebService/V2/queryRanking?appid=${APP_ID}`;
   
   try {
     const response = await fetch(url);
     const data = await response.json();
-    res.json(data);
+
+    // ランキングAPIのデータを検索APIの形式に変換
+    if (data && data.ranking && data.ranking.items) {
+      const formattedItems = data.ranking.items.map(item => ({
+        url: item.url,
+        image: {
+          medium: item.image.medium
+        },
+        name: item.name,
+        price: item.price
+      }));
+      // 検索APIの形式に合わせて`hits`プロパティを持つオブジェクトとして返す
+      res.json({ hits: formattedItems });
+    } else {
+      res.status(404).json({ error: "ランキングデータが見つかりませんでした" });
+    }
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "ランキングAPIのリクエストに失敗しました" });
   }
 });
 
-// サーバー起動
 app.listen(3000, () => {
   console.log("✅ Server running at http://localhost:3000");
 });

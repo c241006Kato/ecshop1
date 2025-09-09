@@ -40,19 +40,17 @@
       const rankingContainer = document.getElementById("ranking-container");
       const rankingList = document.getElementById("ranking-list");
 
-      // 検索フォームの送信イベントを処理
       searchForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const query = searchInput.value;
         if (!query) {
-            // キーワードがない場合はランキングを表示
             resultsDiv.innerHTML = '';
             rankingContainer.classList.remove('hidden');
             return;
         }
 
         resultsDiv.innerHTML = '<p class="col-span-full text-center text-gray-500">検索中...</p>';
-        rankingContainer.classList.add('hidden'); // 検索中はランキングを非表示にする
+        rankingContainer.classList.add('hidden');
 
         try {
           const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
@@ -64,7 +62,6 @@
         }
       });
 
-      // 商品リストを表示する関数
       function displayItems(items, container) {
         container.innerHTML = "";
         if (!items || items.length === 0) {
@@ -86,14 +83,16 @@
         });
       }
 
-      // ⭐ ランキング情報を取得して表示する関数を追加
       async function fetchAndDisplayRanking() {
           try {
               const response = await fetch(`/api/ranking`);
               const data = await response.json();
-              if (data && data.ranking) {
-                displayItems(data.ranking.items, rankingList);
-                rankingContainer.classList.remove('hidden'); // ランキングを表示
+              if (data && data.hits) { // 修正: data.hitsをチェック
+                displayItems(data.hits, rankingList);
+                rankingContainer.classList.remove('hidden');
+              } else {
+                rankingList.innerHTML = '<p class="col-span-full text-center text-red-500">ランキングデータが見つかりませんでした。</p>';
+                rankingContainer.classList.remove('hidden');
               }
           } catch (error) {
               console.error("ランキングの取得エラー:", error);
@@ -102,7 +101,6 @@
           }
       }
 
-      // ページの読み込み時にランキングを自動で表示
       fetchAndDisplayRanking();
     });
   </script>
