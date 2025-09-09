@@ -28,7 +28,7 @@ app.get("/api/search", async (req, res) => {
 
 // ランキングAPIの中継とデータ加工 (デバッグログを追加)
 app.get("/api/ranking", async (req, res) => {
-  const url = `https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch?appid=${APP_ID}&query=人気商品`;
+  const url = `https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch?appid=${APP_ID}&query=1位`;
   
   try {
     const response = await fetch(url);
