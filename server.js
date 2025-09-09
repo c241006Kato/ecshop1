@@ -30,7 +30,7 @@ app.get("/api/search", async (req, res) => {
 // ランキングAPIの中継とデータ加工
 app.get("/api/ranking", async (req, res) => {
   // output=jsonを追加してJSON形式のレスポンスを要求
-  const url = `https://shopping.yahooapis.jp/ShoppingWebService/V2/queryRanking?appid=${APP_ID}&output=json`;
+  const url = `https://shopping.yahooapis.jp/ShoppingWebService/V3/queryitemSearch?appid=${APP_ID}&output=json`;
   
   try {
     const response = await fetch(url);
