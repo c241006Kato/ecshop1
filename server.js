@@ -19,9 +19,9 @@ app.get("/api/search", async (req, res) => {
 
     // sortパラメータがあればURLに追加
   if (sort === 'price-asc') {
-    url += '&sort=-price'; // 価格の安い順
+    url += '&sort=-price'; // ✅ 価格の安い順
   } else if (sort === 'price-desc') {
-    url += '&sort=+price'; // 価格の高い順
+    url += '&sort=+price'; // ✅ 価格の高い順
   }
 
   try {
