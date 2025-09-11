@@ -27,7 +27,7 @@
     <div id="product-results" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
     <div class="flex justify-end mb-4">
   <select id="sort-order" class="px-4 py-2 rounded-lg border border-gray-300">
-    <option value="">並び替え</option>
+    <option value="">SORT</option>
     <option value="price-asc">価格が安い順</option>
     <option value="price-desc">価格が高い順</option>
   </select>
@@ -127,7 +127,7 @@
       function displayItems(items, container) {
         container.innerHTML = "";
         if (!items || items.length === 0) {
-          container.innerHTML = '<p class="col-span-full text-center text-gray-500">商品が見つかりませんでした。</p>';
+          container.innerHTML = '<p class="col-span-full text-center text-gray-500">商品が見つかりませんでした。他の条件でお試しください。</p>';
           return;
         }
         items.forEach(item => {
