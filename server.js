@@ -14,7 +14,15 @@ app.use(express.static(path.join(__dirname, "public")));
 // 商品検索APIの中継 (V3)
 app.get("/api/search", async (req, res) => {
   const query = req.query.q;
-  const url = `https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch?appid=${APP_ID}&query=${encodeURIComponent(query)}`;
+  const sort = req.query.sort;
+  let url = `https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch?appid=${APP_ID}&query=${encodeURIComponent(query)}`;
+
+    // sortパラメータがあればURLに追加
+  if (sort === 'price-asc') {
+    url += '&sort=-price'; // 価格の安い順
+  } else if (sort === 'price-desc') {
+    url += '&sort=+price'; // 価格の高い順
+  }
 
   try {
     const response = await fetch(url);
